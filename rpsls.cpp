@@ -4,33 +4,45 @@
 #include <string>
 #include <algorithm>
 
-// Global scores
-int playerScore = 0;
+int player1Score = 0;
+int player2Score = 0;
 int computerScore = 0;
 bool playGame = true;
 
-// Welcome message
+enum GameMode { PVP, PVC };
+GameMode gameMode;
+
 const std::string WELCOME_MESSAGE = R"(
-************************************************************
-*                   Welcome to Rock, Paper, Scissors!    *
-*                   ----------------------------------   *
-*                   Computer vs. Player                  *
-*                   ----------------------------------   *
-*                   Choose your weapon:                  *
-*                   rock, paper, scissors, lizard, spock *
-*                   Type 'rock', 'paper','scissors',     *
-*                   'lizard' or 'spock' to make your     *
-*                   choice                               *
-*                   ----------------------------------   *
-*                   The first to 10 points wins!         *
-************************************************************
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║              ROCK PAPER SCISSORS LIZARD SPOCK              ║
+║                                                            ║
+║        ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░       ║
+║                                                            ║
+║         🎮 MODES:                                          ║
+║           • Player vs Player (👥)                          ║
+║           • Player vs Computer (💻)                        ║
+║                                                            ║
+║         🎯 INSTRUCTIONS:                                   ║
+║           • Type one of: rock, paper, scissors,            ║
+║             lizard, or spock                               ║
+║           • Type 'quit' to exit anytime                    ║
+║           • First to 10 points wins the game               ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
 )";
+
 
 void displayWelcomeMessage() {
     std::cout << WELCOME_MESSAGE;
-    std::cout << "\nType 'quit' to exit the game at any time.\n";
-    std::cout << "Press Enter to start the game...";
+    std::cout << "\nType 'quit' to end early.\n";
+    std::cout << "Press Enter to start...";
     std::cin.get();
+}
+
+std::string toLower(std::string str) {
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
 }
 
 std::string getChoice(int number) {
@@ -44,99 +56,135 @@ std::string getChoice(int number) {
     }
 }
 
-int generateComputerChoice() {
-    return (rand() % 5) + 1; // 1 to 5
-}
-
-std::string toLower(std::string str) {
-    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-    return str;
-}
-
 bool isValidChoice(const std::string& choice) {
-    return choice == "rock" || choice == "paper" || choice == "scissors" || choice == "lizard" || choice == "spock";
+    return choice == "rock" || choice == "paper" || choice == "scissors" ||
+           choice == "lizard" || choice == "spock";
 }
 
-// Determine winner
-std::string decideWinner(const std::string& player, const std::string& computer) {
-    if (player == computer)
-        return "draw";
+int generateComputerChoice() {
+    return (rand() % 5) + 1;
+}
 
-    // Winning conditions for player
-    if ((player == "rock"     && (computer == "scissors" || computer == "lizard")) ||
-        (player == "paper"    && (computer == "rock"     || computer == "spock")) ||
-        (player == "scissors" && (computer == "paper"    || computer == "lizard")) ||
-        (player == "lizard"   && (computer == "spock"    || computer == "paper")) ||
-        (player == "spock"    && (computer == "scissors" || computer == "rock")))
-        return "player";
+std::string decideWinner(const std::string& p1, const std::string& p2) {
+    if (p1 == p2) return "draw";
 
-    return "computer";
+    if ((p1 == "rock"     && (p2 == "scissors" || p2 == "lizard")) ||
+        (p1 == "paper"    && (p2 == "rock"     || p2 == "spock")) ||
+        (p1 == "scissors" && (p2 == "paper"    || p2 == "lizard")) ||
+        (p1 == "lizard"   && (p2 == "spock"    || p2 == "paper")) ||
+        (p1 == "spock"    && (p2 == "scissors" || p2 == "rock")))
+        return "p1";
+
+    return "p2";
+}
+
+std::string getPlayerChoice(const std::string& playerLabel) {
+    std::string choice;
+    while (true) {
+        std::cout << playerLabel << ", enter your choice: ";
+        std::cin >> choice;
+        choice = toLower(choice);
+        if (choice == "quit") {
+            playGame = false;
+            return "quit";
+        }
+        if (isValidChoice(choice)) {
+            return choice;
+        } else {
+            std::cout << "Invalid choice! Try again.\n";
+        }
+    }
 }
 
 void playRound() {
-    std::string playerChoice;
-    std::cout << "\nEnter your choice: ";
-    std::cin >> playerChoice;
-    playerChoice = toLower(playerChoice);
+    std::string p1Choice = getPlayerChoice("Player 1");
+    if (!playGame) return;
 
-    if (playerChoice == "quit") {
-        playGame = false;
-        return;
+    std::string p2Choice;
+
+    if (gameMode == PVP) {
+        p2Choice = getPlayerChoice("Player 2");
+        if (!playGame) return;
+    } else {
+        int compNum = generateComputerChoice();
+        p2Choice = getChoice(compNum);
+        std::cout << "Computer chose: " << p2Choice << "\n";
     }
 
-    if (!isValidChoice(playerChoice)) {
-        std::cout << "Invalid choice! Try again.\n";
-        return;
-    }
+    std::cout << "Player 1 chose: " << p1Choice << "\n";
+    if (gameMode == PVP)
+        std::cout << "Player 2 chose: " << p2Choice << "\n";
 
-    int computerNumber = generateComputerChoice();
-    std::string computerChoice = getChoice(computerNumber);
+    std::string result = decideWinner(p1Choice, p2Choice);
 
-    std::cout << "You chose: " << playerChoice << "\n";
-    std::cout << "Computer chose: " << computerChoice << "\n";
-
-    std::string result = decideWinner(playerChoice, computerChoice);
-
-    if (result == "player") {
-        playerScore++;
-        std::cout << "🎉 You win this round!\n";
-    } else if (result == "computer") {
-        computerScore++;
-        std::cout << "💻 Computer wins this round.\n";
+    if (result == "p1") {
+        std::cout << "🎉 Player 1 wins this round!\n";
+        player1Score++;
+    } else if (result == "p2") {
+        if (gameMode == PVP) {
+            std::cout << "🎉 Player 2 wins this round!\n";
+            player2Score++;
+        } else {
+            std::cout << "💻 Computer wins this round!\n";
+            computerScore++;
+        }
     } else {
         std::cout << "🤝 It's a draw!\n";
     }
 
-    std::cout << "Score — You: " << playerScore << " | Computer: " << computerScore << "\n";
+    // Display scores
+    std::cout << "\nScoreboard:\n";
+    std::cout << "Player 1: " << player1Score << "\n";
+    if (gameMode == PVP)
+        std::cout << "Player 2: " << player2Score << "\n";
+    else
+        std::cout << "Computer: " << computerScore << "\n";
 
-    // Check for winner
-    if (playerScore >= 10) {
-        std::cout << "\n🏆 Congratulations! You won the game!\n";
-        playGame = false;
-    } else if (computerScore >= 10) {
-        std::cout << "\n😢 Sorry, the computer won the game.\n";
+    // Check for game end
+    if (player1Score >= 10 || player2Score >= 10 || computerScore >= 10) {
+        std::cout << "\n🏁 Game Over!\n";
+        if (player1Score >= 10)
+            std::cout << "🏆 Player 1 wins the game!\n";
+        else if (gameMode == PVP && player2Score >= 10)
+            std::cout << "🏆 Player 2 wins the game!\n";
+        else
+            std::cout << "💻 Computer wins the game!\n";
         playGame = false;
     }
 }
 
+void chooseGameMode() {
+    int mode;
+    std::cout << "Choose Game Mode:\n1. Player vs Player\n2. Player vs Computer\nChoice: ";
+    std::cin >> mode;
+    gameMode = (mode == 1) ? PVP : PVC;
+    std::cin.ignore(); // Clear newline from buffer
+}
+
 int main() {
     srand(static_cast<unsigned int>(time(nullptr)));
+
     displayWelcomeMessage();
+    chooseGameMode();
 
     while (playGame) {
         playRound();
-
         if (playGame) {
-            char choice;
-            std::cout << "\nDo you want to play another round? (y/n): ";
-            std::cin >> choice;
-            if (choice == 'n' || choice == 'N') {
+            char again;
+            std::cout << "\nPlay another round? (y/n): ";
+            std::cin >> again;
+            if (again == 'n' || again == 'N') {
                 playGame = false;
             }
         }
     }
 
-    std::cout << "\nThanks for playing! Final Score — You: " << playerScore
-              << " | Computer: " << computerScore << "\n";
+    std::cout << "\nThanks for playing! Final Score:\n";
+    std::cout << "Player 1: " << player1Score << "\n";
+    if (gameMode == PVP)
+        std::cout << "Player 2: " << player2Score << "\n";
+    else
+        std::cout << "Computer: " << computerScore << "\n";
+
     return 0;
 }
